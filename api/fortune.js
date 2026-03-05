@@ -1,24 +1,30 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-dotenv.config();
+export default async function handler(req, res) {
+    // 允许跨域请求 (CORS)，以便前端能在开发环境中调用
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    );
 
-const app = express();
-const port = process.env.PORT || 3001;
+    // 处理预检请求 (OPTIONS)
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
 
-// 开启 CORS 允许我们的 React 前端（通常是 localhost:3000）跨域访问
-app.use(cors());
-app.use(express.json());
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method Not Allowed' });
+    }
 
-// API 端点处理星座占卜
-app.post('/api/fortune', async (req, res) => {
     const { zodiac, birthday } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-        return res.status(500).json({ error: "API Key (GEMINI_API_KEY) is missing on the server." });
+        return res.status(500).json({ error: "API Key is missing on the server. Please check Vercel Environment Variables." });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -40,15 +46,10 @@ app.post('/api/fortune', async (req, res) => {
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(prompt);
-        console.log('DEBUG result:', result);
         const responseText = await result.response.text();
-        res.json({ fortune: responseText });
+        res.status(200).json({ fortune: responseText });
     } catch (error) {
         console.error("Gemini API Error:", error);
         res.status(500).json({ error: "星象紊乱，请稍后再试。" });
     }
-});
-
-app.listen(port, () => {
-    console.log(`Backend API starts at http://localhost:${port} [Version 1.1]`);
-});
+}
