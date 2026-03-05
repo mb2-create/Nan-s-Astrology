@@ -32,13 +32,27 @@ export default function App() {
 
     setLoading(true);
     setFortune(null);
-    
-    const date = new Date(birthday);
+
+    // Normalize simple numeric input like 19880101
+    let normalizedDate = birthday.trim();
+    if (/^\d{8}$/.test(normalizedDate)) {
+      normalizedDate = `${normalizedDate.slice(0, 4)}-${normalizedDate.slice(4, 6)}-${normalizedDate.slice(6, 8)}`;
+    }
+
+    const date = new Date(normalizedDate);
     const sign = getZodiacSign(date);
+
+    if (!sign || isNaN(date.getTime()) || date.getFullYear() < 1900 || date.getFullYear() > new Date().getFullYear() + 100) {
+      setZodiac(null);
+      setFortune('请填写正确的出生日期。建议格式：1988-01-01 或 19880101');
+      setLoading(false);
+      return;
+    }
+
     setZodiac(sign);
 
     try {
-      const result = await getDailyFortune(sign.name, birthday);
+      const result = await getDailyFortune(sign.name, normalizedDate);
       setFortune(result);
     } catch (error) {
       console.error('Divination failed:', error);
@@ -73,7 +87,7 @@ export default function App() {
         className="relative z-10 w-full max-w-2xl text-center space-y-8"
       >
         <header className="space-y-4">
-          <motion.div 
+          <motion.div
             className="inline-block p-3 rounded-2xl glass animate-float"
           >
             <Sparkles className="w-8 h-8 text-purple-400" />
@@ -92,9 +106,11 @@ export default function App() {
               <Calendar className="w-5 h-5 text-zinc-500 group-focus-within:text-purple-400 transition-colors" />
             </div>
             <input
-              type="date"
+              type="text"
+              inputMode="numeric"
               value={birthday}
               onChange={(e) => setBirthday(e.target.value)}
+              placeholder="出生日期（如：1988-01-01 或 19880101）"
               className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all text-lg"
               required
             />
