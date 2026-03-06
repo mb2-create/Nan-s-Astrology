@@ -24,7 +24,8 @@ export default async function handler(req, res) {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-        return res.status(500).json({ error: "API Key is missing on the server. Please check Vercel Environment Variables." });
+        console.error("Missing GEMINI_API_KEY in environment variables.");
+        return res.status(500).json({ error: "服务器缺少 API Key，请检查 Vercel 环境变量设置。" });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -49,7 +50,7 @@ export default async function handler(req, res) {
         const responseText = await result.response.text();
         res.status(200).json({ fortune: responseText });
     } catch (error) {
-        console.error("Gemini API Error:", error);
-        res.status(500).json({ error: "星象紊乱，请稍后再试。" });
+        console.error("Gemini API Error details:", error.message || error);
+        res.status(500).json({ error: `Gemini API 错误: ${error.message || "未知错误"}` });
     }
 }

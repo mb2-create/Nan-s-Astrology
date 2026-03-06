@@ -13,14 +13,13 @@ export const getDailyFortune = async (zodiac: string, birthday: string): Promise
       body: JSON.stringify({ zodiac, birthday }),
     });
 
-    if (!response.ok) {
-      throw new Error('API server unreachable');
-    }
-
     const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || `Server responded with status ${response.status}`);
+    }
     return data.fortune || "抱歉，星象模糊，请稍后再试。";
-  } catch (error) {
+  } catch (error: any) {
     console.error('Frontend Fetch Error:', error);
-    return "星象紊乱，无法窥见天机。请检查网络。";
+    return `星象紊乱: ${error.message || '请检查网络'}`;
   }
 };
